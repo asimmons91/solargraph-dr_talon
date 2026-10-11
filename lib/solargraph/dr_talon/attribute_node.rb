@@ -10,6 +10,15 @@ module Solargraph
     # A `@return` tag in the comment above the call sets the type; otherwise
     # it's inferred from a literal `default:`.
     #
+    # It also unrolls declarations made in a loop over a list of symbols, as
+    # Talon::StateSprite does for its sprite attributes:
+    #
+    #   ATTRIBUTES = [:x, :y, :w, :h].freeze
+    #   ATTRIBUTES.each { |name| state name }
+    #
+    # The list must be a literal array of symbols, or a constant assigned one
+    # earlier in the same file.
+    #
     # This is a node processor rather than a Convention#local because
     # Solargraph 0.61 doesn't notice when a file's convention pins change, so
     # adding or removing a declaration wouldn't take effect until a restart.
@@ -44,13 +53,30 @@ module Solargraph
       # @return [Boolean] true, so later :send processors still run
       def process
         receiver, dsl, attribute, *options = node.children
-        return true unless receiver.nil? && DSLS.key?(dsl) && attribute&.type == :sym
+        return true unless receiver.nil? && DSLS.key?(dsl)
 
-        host = Host.namespace(region)
-        return true unless host
+        if attribute&.type == :sym
+          host = Host.namespace(region)
+          push_accessors(host, attribute.children[0].to_s, dsl, options, region.code_for(node)) if host
+        elsif (names = iterated_names(attribute))
+          # The loop's block is the closure; the host is around it.
+          host = Host.namespace(region.update(closure: region.closure.closure))
+          names.each { |name| push_accessors(host, name.to_s, dsl, options, "#{dsl} :#{name}") } if host
+        end
+        true
+      end
 
-        name = attribute.children[0].to_s
-        comments = attribute_comments(dsl, options)
+      private
+
+      # @param host [Solargraph::Pin::Namespace]
+      # @param name [String]
+      # @param dsl [Symbol]
+      # @param options [Array<Parser::AST::Node>]
+      # @param declaration [String] the declaration's code, for undocumented
+      #   attributes
+      # @return [void]
+      def push_accessors(host, name, dsl, options, declaration)
+        comments = attribute_comments(dsl, options, declaration)
         reader = method_pin(host, name, comments)
         writer = method_pin(host, "#{name}=", comments)
         writer.parameters.push Solargraph::Pin::Parameter.new(name: "value", decl: :arg, closure: writer, source: :dr_talon)
@@ -58,10 +84,53 @@ module Solargraph
           writer.docstring.add_tag YARD::Tags::Tag.new(:param, "", reader.return_type.items.map(&:rooted_tags), "value")
         end
         pins.push reader, writer
-        true
       end
 
-      private
+      # The names a declaration like `state name` declares when it's directly
+      # inside `LIST.each { |name| ... }`.
+      #
+      # @param attribute [Parser::AST::Node, nil]
+      # @return [Array<Symbol>, nil]
+      def iterated_names(attribute)
+        return unless attribute&.type == :lvar
+
+        block = region.closure
+        return unless block.is_a?(Solargraph::Pin::Block) && block.node
+
+        call, args = block.node.children
+        return unless call.type == :send && call.children[1] == :each && call.children.length == 2
+
+        params = args.children
+        return unless params.length == 1 && params[0].type == :arg && params[0].children[0] == attribute.children[0]
+
+        symbol_list(call.children[0])
+      end
+
+      # @param list [Parser::AST::Node, nil] a literal array of symbols, or a
+      #   constant assigned one earlier in this file, optionally frozen
+      # @return [Array<Symbol>, nil]
+      def symbol_list(list)
+        list = unfreeze(list)
+        list = unfreeze(constant_value(list)) if list&.type == :const
+        return unless list&.type == :array && list.children.all? { |item| item.type == :sym }
+
+        list.children.map { |item| item.children[0] }
+      end
+
+      # @param node [Parser::AST::Node, nil]
+      # @return [Parser::AST::Node, nil] the receiver of `.freeze`, or `node`
+      def unfreeze(node)
+        frozen = node&.type == :send && node.children[1] == :freeze && node.children.length == 2
+        frozen ? node.children[0] : node
+      end
+
+      # @param const [Parser::AST::Node]
+      # @return [Parser::AST::Node, nil] the value most recently assigned to
+      #   a constant of that name in this file
+      def constant_value(const)
+        name = const.children[1].to_s
+        pins.reverse_each.find { |pin| pin.is_a?(Solargraph::Pin::Constant) && pin.name == name }&.assignment
+      end
 
       # @param host [Solargraph::Pin::Namespace]
       # @param name [String]
@@ -87,10 +156,11 @@ module Solargraph
       #
       # @param dsl [Symbol]
       # @param options [Array<Parser::AST::Node>]
+      # @param declaration [String]
       # @return [String]
-      def attribute_comments(dsl, options)
+      def attribute_comments(dsl, options, declaration)
         comments = comments_for(node).to_s
-        comments = "#{DSLS[dsl]}: `#{region.code_for(node)}`" if comments.strip.empty?
+        comments = "#{DSLS[dsl]}: `#{declaration}`" if comments.strip.empty?
         return comments if comments.match?(/^\s*@return\b/)
 
         type = inferred_type(options)

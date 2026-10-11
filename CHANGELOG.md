@@ -1,5 +1,10 @@
 ## [Unreleased]
 
+- `prop` and `state` declarations in an `each` loop over a list of symbols (a literal array, or a constant
+  assigned one in the same file) define a reader and writer per symbol. `Talon::StateSprite` declares its sprite
+  attributes this way, so `x`, `y`, `path`, `angle`, ... now complete on `Talon::GameObject`.
+- Test fixtures synced to Talon c4b670c.
+
 ## [0.1.0] - 2026-10-11
 
 - Initial release: a Solargraph plugin for the [Talon](https://github.com/asimmons91/talon) game framework.

@@ -296,6 +296,98 @@ class Solargraph::TestDrTalon < Minitest::Test
     refute_includes complete(code.sub("‸", "h‸")), "hp"
   end
 
+  def test_declarations_in_a_loop_over_a_constant_define_each_attribute
+    code = <<~RUBY
+      class Mover < Talon::Component
+        AXES = %i[dx dy].freeze
+        AXES.each { |axis| state axis, default: 0 }
+      end
+      Mover.new.d‸
+    RUBY
+    names = complete(code)
+    assert_equal %w[dx dx= dy dy=], (names & %w[dx dx= dy dy=]).sort
+    pin = define(code.sub("d‸", "dy‸")).first
+    assert_match(/state :dy/, pin.docstring.to_s)
+    assert_equal 2, pin.location.range.start.line
+  end
+
+  def test_declarations_in_a_loop_over_a_literal_array_define_each_attribute
+    code = "class Mover < Talon::Component\n  [:speed, :heading].each do |name|\n    prop name\n  end\nend\nMover.new.‸\n"
+    assert_includes complete(code.sub("‸", "spe‸")), "speed"
+    assert_includes complete(code.sub("‸", "hea‸")), "heading"
+  end
+
+  def test_loop_declarations_in_included_blocks_belong_to_the_concern
+    code = <<~RUBY
+      module Tinted
+        extend Talon::Concern
+        include Talon::Stateful
+
+        CHANNELS = [:r, :g, :b].freeze
+
+        included do
+          CHANNELS.each { |channel| state channel }
+        end
+      end
+
+      class Lamp < Talon::Component
+        include Tinted
+      end
+      Lamp.new.‸
+    RUBY
+    assert_includes complete(code.sub("‸", "r‸")), "r"
+    assert_includes complete(code.sub("‸", "b‸")), "b="
+  end
+
+  def test_loop_declarations_need_a_known_list_of_symbols
+    {
+      "names.each { |name| prop name }" => "a method's result isn't known",
+      "LIST.each { |name| prop name }" => "LIST isn't assigned in this file",
+      "MIXED.each { |name| prop name }" => "MIXED isn't all symbols",
+      "SYMS.each { |name| prop other }" => "the declaration doesn't use the block parameter",
+      "SYMS.each_with_index { |name, i| prop name }" => "only each is unrolled",
+      "SYMS.map { |name| prop name }" => "only each is unrolled"
+    }.each do |loop, reason|
+      code = "class Mover < Talon::Component\n  SYMS = [:speed]\n  MIXED = [:speed, \"heading\"]\n  #{loop}\nend\nMover.new.spe‸\n"
+      refute_includes complete(code), "speed", reason
+    end
+  end
+
+  def test_loop_declarations_are_ignored_inside_methods_and_hooks
+    code = <<~RUBY
+      class Mover < Talon::Component
+        SYMS = [:speed, :hp]
+        def setup
+          SYMS.each { |name| prop name }
+        end
+        on_start do
+          SYMS.each { |name| state name }
+        end
+      end
+      Mover.new.‸
+    RUBY
+    refute_includes complete(code.sub("‸", "spe‸")), "speed"
+    refute_includes complete(code.sub("‸", "h‸")), "hp"
+  end
+
+  # Talon::StateSprite
+
+  def test_game_objects_have_state_sprite_attributes
+    code = "go = Talon::GameObject.new(:player)\ngo.‸\n"
+    {"pa" => "path", "an" => "angle", "anchor_" => "anchor_x", "w" => "w=", "blend" => "blendmode"}.each do |expr, name|
+      assert_includes complete(code.sub("‸", "#{expr}‸")), name
+    end
+    pin = define(code.sub("‸", "path‸")).first
+    assert_equal "Talon::StateSprite#path", pin.path
+    assert_match(/state :path/, pin.docstring.to_s)
+  end
+
+  def test_sprite_attributes_complete_on_go_in_component_hooks
+    code = "class Mover < Talon::Component\n  on_update do\n    go.‸\n  end\nend\n"
+    assert_includes complete(code.sub("‸", "x‸")), "x"
+    assert_includes complete(code.sub("‸", "y‸")), "y="
+  end
+
   # lifecycle hook blocks
 
   def test_hook_blocks_are_evaluated_on_the_instance

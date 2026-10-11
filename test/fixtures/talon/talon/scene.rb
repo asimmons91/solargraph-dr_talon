@@ -102,7 +102,7 @@ module Talon
     #   in order, before the block, typically to add a reusable set of
     #   components
     # @param attrs [Hash{Symbol => Object}] passed to {GameObject#initialize}
-    #   (+tags:+ and state values)
+    #   (+tags:+ and state values, including sprite attributes)
     # @yieldparam game_object [GameObject] the new object, for adding components
     # @return [GameObject]
     # @raise [ArgumentError] if an attribute isn't +tags:+ or declared state

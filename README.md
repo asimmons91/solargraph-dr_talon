@@ -86,6 +86,16 @@ Restart your editor's language server. See solargraph-dragonruby's README for ed
     (`2` is an `Integer`, `"a"` a `String`, `true` a `Boolean`, `Vector.new(...)` a `Vector`, ...).
   - The comment becomes the hover docs, and go-to-definition jumps to the declaration.
   - A declaration in a concern's `included` block defines the methods on the concern, so every host gets them.
+  - Declarations in a loop over a list of symbols define one reader and writer per symbol. The list can be a
+    literal array or a constant assigned one earlier in the same file:
+
+    ```ruby
+    AXES = %i[dx dy].freeze
+    AXES.each { |axis| state axis, default: 0 }   # dx, dx=, dy, dy=
+    ```
+
+    This is how `Talon::StateSprite` declares the sprite attributes of every `Talon::GameObject` (`x`, `y`, `w`,
+    `h`, `path`, `angle`, ...), so they complete on game objects (from Talon c4b670c).
 - **Lifecycle hook blocks** in a class body are evaluated on the instance, as Talon runs them.
   - This applies to `on_start`, `on_update`, `on_draw`, `on_destroy`, `on_enter` and `on_exit`, and to `set_callback`
     and `define_callback`.
@@ -105,6 +115,9 @@ Restart your editor's language server. See solargraph-dragonruby's README for ed
   class:
   - `prop :name` and `state :name` called in any class body define accessors.
   - A block passed to any bare `on_*` call in a class body is evaluated on the instance.
+- Only `each` loops are unrolled, with a single block parameter passed straight to `prop` or `state`. A list
+  that comes from a method call, another file, or contains anything but symbols isn't known statically, so its
+  attributes don't complete.
 - A concern's own class side (`Visible.hidden_by_default`) also completes its `ClassMethods`. This is what makes
   them complete inside `included do ... end`, but calling them on the concern itself fails at runtime.
 - The Talon methods behind a hook block (such as `update` from `on_update`) are generated at runtime and don't

@@ -6,10 +6,21 @@ module Talon
   # components) in +args.state+, so it should be unique within its scene and
   # stable across reloads. That state is cleared when the object is removed
   # from its scene, so a later object with the same name starts fresh.
+  #
+  # Every object is also a sprite ({StateSprite}): its position, size, path
+  # and other sprite attributes are state values, so they can be passed to
+  # {#initialize} or {Scene#spawn} as keywords, and the object itself can be
+  # pushed to +args.outputs.sprites+.
+  #
+  # @example
+  #   player = scene.spawn(:player, x: 100, y: 100, w: 32, h: 32,
+  #                        path: "sprites/player.png")
+  #   args.outputs.sprites << player
   class GameObject
     attr_dr
 
     include Stateful
+    include StateSprite
 
     # @return [Scene, nil] the scene this object belongs to
     attr_accessor :scene
@@ -29,7 +40,7 @@ module Talon
     # @param scene [Scene, nil] the owning scene
     # @param tags [Array<Symbol>] labels for grouping and lookup
     # @param state_values [Hash{Symbol => Object}] initial values for
-    #   declared state
+    #   declared state, including sprite attributes such as +x:+ and +path:+
     # @yieldparam game_object [GameObject] the new object, for adding components
     # @raise [ArgumentError] if a keyword isn't a declared state value
     def initialize(name, scene: nil, tags: [], **state_values)
