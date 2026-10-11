@@ -1,7 +1,7 @@
 PATH
   remote: .
   specs:
-    solargraph-dr_talon (0.1.0)
+    solargraph-dr_talon (0.2.0)
       solargraph (~> 0.61.0)
 
 GEM
@@ -232,7 +232,7 @@ CHECKSUMS
   rubocop-performance (1.26.1) sha256=cd19b936ff196df85829d264b522fd4f98b6c89ad271fa52744a8c11b8f71834
   ruby-progressbar (1.13.0) sha256=80fc9c47a9b640d6834e0dc7b3c94c9df37f08cb072b7761e4a71e22cff29b33
   solargraph (0.61.0) sha256=7fcc98d75bf5483b09ea07c86ba695486b9859c557574f7a6d26ec3009c9f138
-  solargraph-dr_talon (0.1.0)
+  solargraph-dr_talon (0.2.0)
   solargraph-dragonruby (0.2.0) sha256=724c39339c2e6e76b902fa308a245a636609fda1e0244501102c8ea9d43f4c22
   sorbet-runtime (0.6.13550) sha256=2e1e14d9259063c2020d05652184b831b6a42b2e9d15109954358699e5c25cea
   sord (7.1.0) sha256=e02fd59294da520e50cea80a07fb9bc93db709c552d055871379ae8d8e87601f

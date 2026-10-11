@@ -1,5 +1,7 @@
 ## [Unreleased]
 
+## [0.2.0] - 2026-10-11
+
 - `prop` and `state` declarations in an `each` loop over a list of symbols (a literal array, or a constant
   assigned one in the same file) define a reader and writer per symbol. `Talon::StateSprite` declares its sprite
   attributes this way, so `x`, `y`, `path`, `angle`, ... now complete on `Talon::GameObject`.
@@ -18,5 +20,6 @@
   any other `on_*`, `set_callback` and `define_callback`) are evaluated on the instance. Their block parameters
   are typed by the hook method's `@yieldparam` tag, which Talon's built-in hooks document as `GTK::Args`.
 
-[Unreleased]: https://github.com/asimmons91/solargraph-dr_talon/compare/v0.1.0...HEAD
+[Unreleased]: https://github.com/asimmons91/solargraph-dr_talon/compare/v0.2.0...HEAD
+[0.2.0]: https://github.com/asimmons91/solargraph-dr_talon/compare/v0.1.0...v0.2.0
 [0.1.0]: https://github.com/asimmons91/solargraph-dr_talon/releases/tag/v0.1.0
