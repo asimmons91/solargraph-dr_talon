@@ -1,0 +1,5 @@
+# For available configuration options, see:
+#   https://github.com/standardrb/standard
+ruby_version: 3.2
+ignore:
+  - "test/fixtures/**/*" # vendored Talon source, which follows its own style

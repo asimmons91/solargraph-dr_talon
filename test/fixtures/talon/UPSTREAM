@@ -1,0 +1,3 @@
+Snapshot of lib/ from https://github.com/asimmons91/talon at
+6625c0748f3b876e789fc8db83c06cd654152ce2, used as the Talon source a game
+would vendor. Refresh it with `bundle exec rake fixtures:sync`.

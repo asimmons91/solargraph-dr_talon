@@ -1,0 +1,36 @@
+module Solargraph
+  module DrTalon
+    VERSION: String
+
+    module Host
+      CONCERN_BLOCKS: Array[Symbol]
+
+      def self.namespace: (Solargraph::Parser::Region region) -> Solargraph::Pin::Namespace?
+
+      def self.concern_block?: (Solargraph::Pin::Base pin) -> bool
+    end
+
+    class BlockNode < Solargraph::Parser::ParserGem::NodeProcessors::BlockNode
+      CALLBACK_METHODS: Array[Symbol]
+
+      def process: () -> bool
+    end
+
+    class BoundBlock < Solargraph::Pin::Block
+      def rebind: (Solargraph::ApiMap _api_map) -> void
+    end
+
+    class AttributeNode < Solargraph::Parser::NodeProcessor::Base
+      DSLS: Hash[Symbol, String]
+      LITERAL_TYPES: Hash[Symbol, String]
+
+      def process: () -> bool
+    end
+
+    class Convention < Solargraph::Convention::Base
+      CONCERN: String
+
+      def object: (Solargraph::ApiMap api_map, String rooted_tag, Symbol scope, Array[Symbol] visibility, bool deep, Set[String] skip, bool _no_core) -> Solargraph::Environ
+    end
+  end
+end
